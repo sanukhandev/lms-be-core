@@ -207,21 +207,37 @@ class CourseSeeder extends Seeder
             $courseTags = $course['tags'];
             unset($course['tags']);
             
-            $courseId = DB::table('courses')->insertGetId(array_merge($course, [
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]));
+            DB::table('courses')->updateOrInsert(
+                [
+                    'tenant_id' => $course['tenant_id'],
+                    'slug' => $course['slug']
+                ], // Match condition
+                array_merge($course, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
+            );
+            
+            // Get the course ID
+            $courseId = DB::table('courses')
+                ->where('tenant_id', $course['tenant_id'])
+                ->where('slug', $course['slug'])
+                ->value('id');
             
             $courseIds[] = $courseId;
 
             // Add course tags
             foreach ($courseTags as $tagSlug) {
                 if (isset($tags[$tagSlug])) {
-                    DB::table('course_tags')->insert([
-                        'course_id' => $courseId,
-                        'tag_id' => $tags[$tagSlug]->id,
-                        'created_at' => now(),
-                    ]);
+                    DB::table('course_tags')->updateOrInsert(
+                        [
+                            'course_id' => $courseId,
+                            'tag_id' => $tags[$tagSlug]->id
+                        ], // Match condition
+                        [
+                            'created_at' => now(),
+                        ]
+                    );
                 }
             }
 
@@ -236,13 +252,17 @@ class CourseSeeder extends Seeder
             ];
 
             foreach ($objectives[$courseId] as $index => $objective) {
-                DB::table('course_learning_objectives')->insert([
-                    'course_id' => $courseId,
-                    'objective' => $objective,
-                    'sort_order' => $index + 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                DB::table('course_learning_objectives')->updateOrInsert(
+                    [
+                        'course_id' => $courseId,
+                        'objective' => $objective
+                    ], // Match condition
+                    [
+                        'sort_order' => $index + 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
             }
 
             // Add prerequisites for intermediate/advanced courses
@@ -254,14 +274,17 @@ class CourseSeeder extends Seeder
                 ];
 
                 foreach ($prerequisites as $index => $prerequisite) {
-                    DB::table('course_prerequisites')->insert([
-                        'course_id' => $courseId,
-                        'prerequisite' => $prerequisite,
-                        'is_required' => $index === 0, // First one is required
-                        'sort_order' => $index + 1,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    DB::table('course_prerequisites')->updateOrInsert(
+                        [
+                            'course_id' => $courseId,
+                            'prerequisite' => $prerequisite
+                        ], // Match condition
+                        [
+                            'sort_order' => $index + 1,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]
+                    );
                 }
             }
         }
