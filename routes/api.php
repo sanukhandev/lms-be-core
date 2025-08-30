@@ -1,6 +1,10 @@
 <?php
 
-use App\Presentation\Controllers\AuthController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\EnrollmentController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +25,17 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
+// Public course browsing (for marketing pages)
+Route::get('/courses/featured', [CourseController::class, 'featured']);
+
+// Public category routes
+Route::prefix('categories')->group(function () {
+    Route::get('/', [CategoryController::class, 'index']);
+    Route::get('/tree', [CategoryController::class, 'tree']);
+    Route::get('/{id}', [CategoryController::class, 'show']);
+    Route::get('/{id}/courses', [CategoryController::class, 'courses']);
+});
+
 // Protected routes
 Route::middleware(['auth:api'])->group(function () {
     // Authentication routes
@@ -28,8 +43,34 @@ Route::middleware(['auth:api'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/logout', [AuthController::class, 'logout']);
-        Route::post('/impersonate/{userId}', [AuthController::class, 'impersonate'])
-            ->middleware('role:super_admin');
+    });
+
+    // Course routes
+    Route::prefix('courses')->group(function () {
+        Route::get('/', [CourseController::class, 'index']);
+        Route::get('/my-courses', [CourseController::class, 'myCourses']);
+        Route::get('/{id}', [CourseController::class, 'show']);
+        Route::post('/{id}/enroll', [CourseController::class, 'enroll']);
+    });
+
+    // Enrollment routes
+    Route::prefix('enrollments')->group(function () {
+        Route::get('/', [EnrollmentController::class, 'index']);
+        Route::get('/{id}', [EnrollmentController::class, 'show']);
+        Route::put('/{id}/progress', [EnrollmentController::class, 'updateProgress']);
+        Route::delete('/{id}', [EnrollmentController::class, 'cancel']);
+    });
+
+    // Alternative enrollment route
+    Route::post('/courses/{courseId}/enroll', [EnrollmentController::class, 'enroll']);
+
+    // User profile routes
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [UserController::class, 'profile']);
+        Route::put('/', [UserController::class, 'updateProfile']);
+        Route::put('/password', [UserController::class, 'changePassword']);
+        Route::get('/dashboard', [UserController::class, 'dashboard']);
+        Route::get('/activity', [UserController::class, 'activity']);
     });
 
     // Health check route
@@ -38,6 +79,7 @@ Route::middleware(['auth:api'])->group(function () {
             'status' => 'ok',
             'timestamp' => now(),
             'version' => '1.0.0',
+            'user' => auth()->user()->only(['id', 'name', 'email']),
         ]);
     });
 });

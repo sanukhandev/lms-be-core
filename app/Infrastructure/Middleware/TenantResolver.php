@@ -13,10 +13,8 @@ class TenantResolver extends InitializeTenancyByDomain
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle($request, Closure $next)
     {
         try {
             // Try to resolve tenant by domain first
@@ -30,7 +28,7 @@ class TenantResolver extends InitializeTenancyByDomain
     /**
      * Resolve tenant by API key or JWT token.
      */
-    protected function resolveTenantByApiKey(Request $request, Closure $next): Response
+    protected function resolveTenantByApiKey($request, Closure $next)
     {
         // Try to get tenant from X-Tenant-ID header
         $tenantId = $request->header('X-Tenant-ID');
@@ -58,7 +56,7 @@ class TenantResolver extends InitializeTenancyByDomain
     /**
      * Extract tenant ID from JWT token.
      */
-    protected function extractTenantFromJWT(Request $request): ?string
+    protected function extractTenantFromJWT($request): ?string
     {
         try {
             $token = $request->bearerToken();
