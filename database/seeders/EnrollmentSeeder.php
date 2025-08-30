@@ -31,19 +31,37 @@ class EnrollmentSeeder extends Seeder
                 $enrolledAt = now()->subDays(rand(1, 30));
                 $progress = rand(0, 100);
                 $completedAt = $progress === 100 ? $enrolledAt->copy()->addDays(rand(1, 20)) : null;
+                $startedAt = $progress > 0 ? $enrolledAt->copy()->addHours(rand(1, 24)) : null;
+                $expiresAt = $enrolledAt->copy()->addMonths(6); // 6 months access
+                
+                // Calculate chapter progress
+                $totalChapters = DB::table('chapters')
+                    ->join('modules', 'chapters.module_id', '=', 'modules.id')
+                    ->where('modules.course_id', $course->id)
+                    ->count();
+                $completedChapters = (int) ($totalChapters * $progress / 100);
 
-                DB::table('enrollments')->insert([
-                    'tenant_id' => 'demo',
-                    'course_id' => $course->id,
-                    'student_id' => $studentId,
-                    'enrolled_at' => $enrolledAt,
-                    'completed_at' => $completedAt,
-                    'progress_percentage' => $progress,
-                    'last_accessed_at' => now()->subHours(rand(1, 48)),
-                    'status' => $completedAt ? 'completed' : 'active',
-                    'created_at' => $enrolledAt,
-                    'updated_at' => now(),
-                ]);
+                DB::table('enrollments')->updateOrInsert(
+                    [
+                        'tenant_id' => 'demo',
+                        'user_id' => $studentId,
+                        'course_id' => $course->id
+                    ], // Match condition
+                    [
+                        'status' => $completedAt ? 'completed' : 'active',
+                        'enrolled_at' => $enrolledAt,
+                        'started_at' => $startedAt,
+                        'completed_at' => $completedAt,
+                        'expires_at' => $expiresAt,
+                        'progress_percentage' => $progress,
+                        'completed_chapters' => $completedChapters,
+                        'total_chapters' => $totalChapters,
+                        'time_spent_minutes' => rand(30, 300), // 30 minutes to 5 hours
+                        'final_grade' => $completedAt ? rand(70, 100) : null,
+                        'created_at' => $enrolledAt,
+                        'updated_at' => now(),
+                    ]
+                );
             }
         }
 

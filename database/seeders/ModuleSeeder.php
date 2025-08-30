@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ModuleSeeder extends Seeder
 {
@@ -18,16 +19,26 @@ class ModuleSeeder extends Seeder
             // Create 3-5 modules per course
             $moduleCount = rand(3, 5);
             for ($i = 1; $i <= $moduleCount; $i++) {
-                DB::table('modules')->insert([
-                    'tenant_id' => 'demo',
-                    'course_id' => $course->id,
-                    'title' => "Module {$i}: " . $this->getModuleTitle($i),
-                    'description' => "This module covers important concepts and practical applications.",
-                    'sort_order' => $i,
-                    'is_published' => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $title = "Module {$i}: " . $this->getModuleTitle($i);
+                $slug = Str::slug($title);
+                
+                DB::table('modules')->updateOrInsert(
+                    [
+                        'course_id' => $course->id,
+                        'slug' => $slug
+                    ], // Match condition
+                    [
+                        'tenant_id' => 'demo',
+                        'strapi_module_id' => "module_{$course->id}_{$i}",
+                        'title' => $title,
+                        'description' => "This module covers important concepts and practical applications.",
+                        'estimated_duration_minutes' => rand(45, 120), // 45-120 minutes per module
+                        'sort_order' => $i,
+                        'is_published' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
             }
         }
 
